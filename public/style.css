@@ -1,5 +1,5 @@
 @media screen and (max-width: 767px) {
-    :root { --tilesize: calc(50vw - 24px) }
+    :root { --tilesize: calc(50vw - 18px) }
     .tile {
 	width:  var(--tilesize);
 	height: var(--tilesize);
@@ -17,12 +17,21 @@ body * {
 .tile {
     display: inline-block;
     margin: 4px;
-    padding-left: 6px;
-    padding-top:  6px;
+    padding: 4px;
+
     color: #DCDDDB;
 
     font-size: 16pt;
+
+    float:left;
+    clear:none;
+
+    box-sizing: border-box;
+    padding-left: 12px;
+    padding-right: 12px;    
+    padding-top: 6px;    
 }
 
 .tile, .tile.off  { background-color: #BDC1C5 }
 .tile.on { background-color: #69695E }
+

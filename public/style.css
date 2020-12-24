@@ -1,0 +1,28 @@
+@media screen and (max-width: 767px) {
+    :root { --tilesize: calc(50vw - 24px) }
+    .tile {
+	width:  var(--tilesize);
+	height: var(--tilesize);
+    }
+}
+
+@media screen and (min-width: 768px) {
+    :root { --tilesize: max(144px, calc(-18px + (100vw - 12px) / 8)) }
+}
+
+body * {
+    font-family: montserrat, sans;
+}
+
+.tile {
+    display: inline-block;
+    margin: 4px;
+    padding-left: 6px;
+    padding-top:  6px;
+    color: #DCDDDB;
+
+    font-size: 16pt;
+}
+
+.tile, .tile.off  { background-color: #BDC1C5 }
+.tile.on { background-color: #69695E }

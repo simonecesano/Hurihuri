@@ -6,8 +6,12 @@
     }
 }
 
-@media screen and (min-width: 768px) {
+@media screen and (min-width: 767px) {
     :root { --tilesize: max(144px, calc(-18px + (100vw - 12px) / 8)) }
+    .tile {
+	width:  var(--tilesize);
+	height: var(--tilesize);
+    }
 }
 
 body * {

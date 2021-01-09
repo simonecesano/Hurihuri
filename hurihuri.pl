@@ -57,7 +57,8 @@ __DATA__
 % layout 'default';
 % title 'Welcome';
 % for (sort keys %{app->config->{switches}}) {
-<div class="tile on" data-switch-id="<%= $_ %>"><%= app->config->{switches}->{$_}->{name} || $_ %></div>
+<div class="tile on" 
+     data-switch-id="<%= $_ %>"><%= app->config->{switches}->{$_}->{name} || $_ %></div>
 % }
 <script type="fluor">
   on("click", ".tile",

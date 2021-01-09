@@ -26,20 +26,21 @@ sub command {
     my $self = shift;
     my $command = pop;
     my ($address) = shift || $self->address;
-    
-    
+
     my $promise =  Mojo::Promise->new;
-    
+
     return $promise->reject('need an address') unless $address;
     return $promise->reject('need a command')  unless $command;
-    
+
     $command = encrypt(encode_json($commands->{$command}));
-    
+
     my $port = 9999;
-    
+
     my $id = Mojo::IOLoop->client({ address => $address, port => 9999 } => sub {
 				      my ($loop, $err, $stream) = @_;
-				      
+
+				      return $promise->reject('could not open stream') unless $stream;
+
 				      $stream->on(read => sub {
 						      my ($stream, $bytes) = @_;
 						      $stream->close;

@@ -71,15 +71,15 @@ websocket '/state' => sub {
     my $c = shift;
     $c->app->log->debug(sprintf 'Client connected: %s', $c->tx);
 
-    my $id = $c->tx;
+    my $id = $c->tx =~ s/.+?HASH\((.+?)\)/$1/r;
 
     $clients->{"$id"} = $c->tx;
 
-    $c->tx->send({ json => { id => $id }});
+    $c->tx->send({ json => { id => "$id" }});
 
     $c->on(message => sub {
 	       my ($c, $msg) = @_;
-	       $c->send("echo: $msg");
+	       $c->send({  json => { echo => $msg } });
 	   });
 };
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-use Mojolicious::Lite;
+use Mojolicious::Lite -signatures;
 use Mojo::Util qw/dumper/;
 use FindBin qw($Bin);
 use lib "$Bin/lib";
@@ -9,26 +9,45 @@ use Hurihuri::Switch;
 plugin Config => {file => 'hurihuri.conf'};
 plugin Config => {file => 'switches.conf'};
 
+helper 'switch' => sub {
+    my $c = shift;
+    my $ip = shift;
+    my $h = Hurihuri::Switch->new({ type => $c->app->config->{switches}->{$ip}->{type}, address => $ip });
+    return $h;
+};
 
 get '/' => sub {
     my $c = shift;
     $c->app->log->info(Mojo::IOLoop->is_running);
-
     $c->render(template => 'index');
 };
 
-# curl http://192.168.1.217/cm?cmnd=Power%20TOGGLE
-# curl http://192.168.1.217/cm?cmnd=Status
+
+get '/state/*ip' => sub {
+    my $c = shift;
+    $c->render_later;
+    $c->inactivity_timeout(5);
+
+    my $h = $c->switch($c->stash('ip'));
+
+    $h->state
+	->then(sub {
+		   my $res = shift;
+		   my $h = $h;
+		   $c->render(json => { ip => $c->stash('ip'), state => $res })
+	       })
+	->catch(sub {
+		    my $err = shift;
+		    $c->render(json => { ip => $c->stash('ip'), error => $err })
+		});
+};
 
 post '/switch' => sub {
     my $c = shift;
     # $c->app->log->info(dumper $c->req->json);
     my $ip = $c->req->json->{switch};
-    
-    my $type = $c->app->config->{switches}->{$ip}->{type};
 
-    # my $status = $c->toggle($ip, $type);
-    # $c->app->log->info($type, $ip);
+    my $type = $c->app->config->{switches}->{$ip}->{type};
 
     $c->render_later;
 
@@ -44,9 +63,47 @@ post '/switch' => sub {
 	->catch(sub {
 		   $c->render(json => { error => shift })
 		});
-    
 };
 
+my $clients = {};
+
+websocket '/state' => sub {
+    my $c = shift;
+    $c->app->log->debug(sprintf 'Client connected: %s', $c->tx);
+
+    my $id = $c->tx;
+
+    $clients->{"$id"} = $c->tx;
+
+    $c->tx->send({ json => { id => $id }});
+
+    $c->on(message => sub {
+	       my ($c, $msg) = @_;
+	       $c->send("echo: $msg");
+	   });
+};
+
+
+my $id = Mojo::IOLoop->recurring(3 => sub ($loop) {
+				     for (keys %{app->config->{switches}}) {
+					 my $ip = $_;
+					 my $h = Hurihuri::Switch->new({ type => app->config->{switches}->{$ip}->{type}, address => $ip });
+					 $h->state
+					     ->then(sub {
+							my $res = shift;
+							my $h = $h;
+							for (keys %$clients) {
+							    $clients->{$_}->send({ json => { ip => $ip, state => $res }});
+							}
+						    })
+					     ->catch(sub {
+							 my $err = shift;
+							 for (keys %$clients) {
+							     $clients->{$_}->send({ json => { ip => $ip, state => $err }});
+							 }
+						     });
+				     }
+				 });
 
 app->start;
 
@@ -86,4 +143,5 @@ __DATA__
     <script type="module" src="./fluor.min.js"></script>
   </head>
   <body><%= content %></body>
+  <script src="./socket.js"></script>
 </html>

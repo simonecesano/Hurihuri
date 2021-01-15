@@ -14,8 +14,14 @@
     }
 }
 
+body {
+    background-color: Gainsboro
+
+}
+
 body * {
     font-family: montserrat, sans;
+    background-color: Gainsboro
 }
 
 .tile {
@@ -36,6 +42,7 @@ body * {
     padding-top: 6px;    
 }
 
-.tile, .tile.off  { background-color: #BDC1C5 }
-.tile.on { background-color: #69695E }
+.tile, .tile.off  { background-color: CornflowerBlue }
+.tile.on { background-color: Goldenrod }
+.tile.inactive { background-color: DarkGray }
 

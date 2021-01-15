@@ -9,6 +9,16 @@ use Hurihuri::Switch;
 plugin Config => {file => 'hurihuri.conf'};
 plugin Config => {file => 'switches.conf'};
 
+my $clients = {};
+
+helper 'sendall' => sub {
+    my $c = shift;
+    my $json = shift;
+    for (keys %$clients) {
+	$clients->{$_}->send({ json => $json });
+    }
+};
+
 helper 'switch' => sub {
     my $c = shift;
     my $ip = shift;
@@ -57,7 +67,7 @@ post '/switch' => sub {
     $h->toggle
 	->then(sub {
 		   my $res = shift;
-		   $c->app->log->info($res);
+		   $c->update_status($ip);
 		   $c->render(json => $res )
 	       })
 	->catch(sub {
@@ -65,7 +75,6 @@ post '/switch' => sub {
 		});
 };
 
-my $clients = {};
 
 websocket '/state' => sub {
     my $c = shift;
@@ -83,25 +92,30 @@ websocket '/state' => sub {
 	   });
 };
 
+helper 'update_status' => sub {
+    my $c = shift;
+    my $ip = shift;
+    my $h = $c->switch($ip);
+    $h->state
+	->then(sub {
+		   my $res = shift;
+		   my $h = $h;
+		   for (keys %$clients) {
+		       $clients->{$_}->send({ json => { ip => $ip, state => $res }});
+		   }
+	       })
+	->catch(sub {
+		    my $err = shift;
+		    for (keys %$clients) {
+			$clients->{$_}->send({ json => { ip => $ip, state => $err }});
+		    }
+		});
+};
 
 my $id = Mojo::IOLoop->recurring(3 => sub ($loop) {
 				     for (keys %{app->config->{switches}}) {
 					 my $ip = $_;
-					 my $h = Hurihuri::Switch->new({ type => app->config->{switches}->{$ip}->{type}, address => $ip });
-					 $h->state
-					     ->then(sub {
-							my $res = shift;
-							my $h = $h;
-							for (keys %$clients) {
-							    $clients->{$_}->send({ json => { ip => $ip, state => $res }});
-							}
-						    })
-					     ->catch(sub {
-							 my $err = shift;
-							 for (keys %$clients) {
-							     $clients->{$_}->send({ json => { ip => $ip, state => $err }});
-							 }
-						     });
+					 app->update_status($ip);
 				     }
 				 });
 

@@ -18,7 +18,7 @@ my $commands = {
 		countdown =>  { count_down => { get_rules => {} } } ,
 		antitheft =>  { anti_theft => { get_rules => {} } } ,
 		reboot    =>  { system => { reboot => { delay => 1 } } } ,
-		reset     =>  { system=> { reset=>{ delay => 1 } } }, 
+		reset     =>  { system=> { reset=>{ delay => 1 } } },
 		scan_ssid =>  { netif => {"get_scaninfo" => {"refresh" => 1}}}
 	       };
 
@@ -59,20 +59,20 @@ sub command {
 				      $stream->write($command);
 				  });
 
-    
+
     return $promise;
 }
 
 sub is_error {
     my $res = shift;
     return [ values %{$res->{system}} ]->[0]->{err_code} > 0;
-    
+
 }
 
 sub encrypt {
     my $s = shift;
     my ($i, $a);
-    
+
     my ($r, $k) = ("\0\0\0\0", 171);
 
     $r = pack 'N', length($s);
@@ -90,7 +90,7 @@ sub decrypt {
     my $s = shift;
 
     $s = substr($s, 4);
-    
+
     my ($i, $a);
     my ($r, $k) = ("", 171);
     for (split '', $s) {
@@ -124,7 +124,7 @@ sub toggle {
 
 sub state {
     my ($self, $address) = @_;
-    
+
     $self->command($address, 'info')
 	->then(sub {
 		   my $res = shift;

@@ -26,6 +26,11 @@ helper 'switch' => sub {
     return $h;
 };
 
+helper 'switch_ips' => sub {
+    my $c = shift;
+    keys %{$c->app->config->{switches}}
+};
+
 get '/' => sub {
     my $c = shift;
     $c->app->log->info(Mojo::IOLoop->is_running);
@@ -84,6 +89,9 @@ websocket '/state' => sub {
 
     $clients->{"$id"} = $c->tx;
 
+    for ($c->switch_ips) {
+	$c->update_status($_, $id);
+    }
     $c->tx->send({ json => { id => "$id" }});
 
     $c->on(message => sub {
@@ -95,18 +103,20 @@ websocket '/state' => sub {
 helper 'update_status' => sub {
     my $c = shift;
     my $ip = shift;
+    my @clients = shift || keys %$clients;
+
     my $h = $c->switch($ip);
     $h->state
 	->then(sub {
 		   my $res = shift;
 		   my $h = $h;
-		   for (keys %$clients) {
+		   for (@clients) {
 		       $clients->{$_}->send({ json => { ip => $ip, state => $res }});
 		   }
 	       })
 	->catch(sub {
 		    my $err = shift;
-		    for (keys %$clients) {
+		    for (@clients) {
 			$clients->{$_}->send({ json => { ip => $ip, state => $err }});
 		    }
 		});
